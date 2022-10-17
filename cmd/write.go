@@ -10,10 +10,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // writeCmd represents the write command
@@ -27,40 +24,37 @@ To add "USER_PASSWORD: admin123" to "db-pass" secret data, located in "core" nam
 ksec write db-pass USER_PASSWORD admin123 -n core
 `,
 	Args: cobra.MatchAll(cobra.ExactArgs(3), cobra.OnlyValidArgs),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		secretName := args[0]
 		secretKey := args[1]
 		newValue := args[2]
 
-		kubeConf := viper.GetString("kubeconfig")
-		config, err := clientcmd.BuildConfigFromFlags("", kubeConf)
+		clientSet, err := getKubernetesClient()
 		if err != nil {
-			panic(err)
-		}
-		clientset, err := kubernetes.NewForConfig(config)
-		if err != nil {
-			panic(err)
+			return err
 		}
 
-		secretsClient := clientset.CoreV1().Secrets(namespace)
+		secretsClient := clientSet.CoreV1().Secrets(namespace)
 		secret, err := secretsClient.Get(context.TODO(), secretName, metav1.GetOptions{})
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		if oldValue, ok := secret.Data[secretKey]; ok {
 			if string(oldValue) == newValue {
 				fmt.Println("Current value match with the desired one")
-				return
+				return nil
 			}
 
 			if !confirmOverwrite(string(oldValue), newValue) {
-				return
+				return nil
 			}
 		}
 
 		secret.Data[secretKey] = []byte(newValue)
-		secretsClient.Update(context.TODO(), secret, metav1.UpdateOptions{})
+		_, err = secretsClient.Update(context.TODO(), secret, metav1.UpdateOptions{})
+
+		return err
 	},
 }
 
