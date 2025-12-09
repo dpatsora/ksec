@@ -40,12 +40,18 @@ testKey: tesKey1
 name.txt: default_name
 ```
 
+**Interactive selection with fzf** (if fzf is installed):
+```bash
+➜  ksec read
+# Opens fzf to select secret interactively
+```
+
 ### Write key/value pair in your secret
 ```bash
 ➜  ksec write db-user-pass username.txt admin
 ```
 
-### Update key/value pair in your secret 
+### Update key/value pair in your secret
 
 ```bash
 ➜  ksec write db-user-pass username.txt superadmin
@@ -53,6 +59,28 @@ Current value: admin
 New value: superadmin
 
 Do you want to continue with this operation? [y|n]: y
+```
+
+### Edit secret in your default editor
+
+```bash
+➜  ksec edit db-user-pass
+# Opens secret in $EDITOR (defaults to vim)
+# Make your changes and save
+# Secret is automatically updated in Kubernetes
+```
+
+**With backup** (creates a backup in current directory before updating):
+```bash
+➜  ksec edit db-user-pass --backup
+Backup created: ksec-backup-db-user-pass-default-20251209-143055.yaml
+Updating secret db-user-pass in namespace default
+```
+
+**Interactive selection with fzf**:
+```bash
+➜  ksec edit
+# Opens fzf to select secret, then opens editor
 ```
 
 ### Get usage example for every command
@@ -79,6 +107,25 @@ Global Flags:
 
 ## Configuration
 
+### Required
 The only required configuration is Kubeconfig.
 
 By default, it would be taken from `KUBECONFIG` env var. But you can pass it with `--kubeconfig` flag (flag takes precedence over env var).
+
+### Optional Dependencies
+
+**fzf** - For interactive secret selection
+```bash
+# macOS
+brew install fzf
+
+# Linux
+sudo apt install fzf  # Debian/Ubuntu
+sudo yum install fzf  # RHEL/CentOS
+```
+
+When fzf is installed, you can omit the secret name and select it interactively:
+```bash
+ksec read    # Opens fzf for selection
+ksec edit    # Opens fzf for selection
+```
